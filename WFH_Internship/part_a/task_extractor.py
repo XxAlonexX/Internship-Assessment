@@ -1,20 +1,10 @@
 import spacy
-import nltk
-from datetime import datetime
-from nltk.tokenize import sent_tokenize
-from nltk.corpus import stopwords
 import re
+from datetime import datetime
 from typing import Dict, List, Tuple
 
 class TaskExtractor:
     def __init__(self):
-        # Download required NLTK data
-        nltk.download('punkt')
-        nltk.download('averaged_perceptron_tagger')
-        nltk.download('stopwords')
-        nltk.download('maxent_ne_chunker')
-        nltk.download('words')
-        
         # Load spaCy model
         self.nlp = spacy.load('en_core_web_sm')
         
@@ -38,9 +28,9 @@ class TaskExtractor:
         text = re.sub(r'\s+', ' ', text)
         text = text.strip()
         
-        # Tokenize into sentences
-        sentences = sent_tokenize(text)
-        return sentences
+        # Manually tokenize sentences
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        return [s.strip() for s in sentences if s.strip()]
 
     def is_task_sentence(self, sentence: str) -> bool:
         """Determine if a sentence contains a task."""
@@ -64,13 +54,27 @@ class TaskExtractor:
 
     def extract_entity(self, sentence: str) -> str:
         """Extract who needs to perform the task."""
+        # First, try spaCy named entity recognition
         doc = self.nlp(sentence)
         
         # Look for named entities of type PERSON
         for ent in doc.ents:
             if ent.label_ == 'PERSON':
                 return ent.text
-                
+        
+        # Fallback method 1: Look for proper nouns before task verbs
+        for token in doc:
+            if token.pos_ == 'PROPN' and any(verb in sentence.lower() for verb in self.task_indicators['verbs']):
+                return token.text
+        
+        # Fallback method 2: Extract first name-like word
+        for token in doc:
+            # Check if token looks like a name (starts with capital, is not at sentence start)
+            if (token.pos_ == 'PROPN' and 
+                token.text[0].isupper() and 
+                token.i > 0):
+                return token.text
+        
         return None
 
     def extract_deadline(self, sentence: str) -> str:

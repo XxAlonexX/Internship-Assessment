@@ -1,22 +1,34 @@
 import pandas as pd
 import numpy as np
+import re
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, classification_report
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-import re
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 class SentimentAnalyzer:
     def __init__(self):
-        # Download required NLTK data
-        nltk.download('punkt')
-        nltk.download('stopwords')
+        # Stop words list (manually defined)
+        self.stop_words = {
+            'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 
+            'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 
+            'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 
+            'they', 'them', 'their', 'theirs', 'themselves', 'what', 'which', 
+            'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'is', 'are', 
+            'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having', 
+            'do', 'does', 'did', 'doing', 'a', 'an', 'the', 'and', 'but', 'if', 
+            'or', 'because', 'as', 'until', 'while', 'of', 'at', 'by', 'for', 
+            'with', 'about', 'against', 'between', 'into', 'through', 'during', 
+            'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 
+            'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 
+            'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 
+            'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 
+            'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 
+            'than', 'too', 'very', 's', 't', 'can', 'will', 'just', 'don', 
+            'should', 'now'
+        }
         
-        self.stop_words = set(stopwords.words('english'))
         self.vectorizer = TfidfVectorizer(max_features=5000)
         self.model = LogisticRegression(random_state=42)
         
@@ -25,13 +37,16 @@ class SentimentAnalyzer:
         # Convert to lowercase
         text = text.lower()
         
+        # Remove URLs
+        text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+        
         # Remove special characters and digits
         text = re.sub(r'[^a-zA-Z\s]', '', text)
         
-        # Tokenize
-        tokens = word_tokenize(text)
+        # Tokenize (split into words)
+        tokens = text.split()
         
-        # Remove stopwords
+        # Remove stop words
         tokens = [token for token in tokens if token not in self.stop_words]
         
         # Join tokens back to string
@@ -59,7 +74,7 @@ class SentimentAnalyzer:
         # Train the model
         self.model.fit(X_train, y_train)
         
-    def evaluate(self, test_df: pd.DataFrame) -> dict:
+    def evaluate(self, test_df: pd.DataFrame) -> Tuple[Dict[str, float], str]:
         """Evaluate the model's performance."""
         # Transform test data
         X_test = self.vectorizer.transform(test_df['processed_text'])
@@ -111,7 +126,7 @@ if __name__ == "__main__":
     analyzer = SentimentAnalyzer()
     
     # Sample dataset path (you'll need to provide your own dataset)
-    data_path = "path_to_your_dataset.csv"
+    data_path = "sample_dataset.csv"
     
     # Train the model
     try:
@@ -143,4 +158,4 @@ if __name__ == "__main__":
             print(f"Sentiment: {sentiment}\n")
             
     except FileNotFoundError:
-        print("Please provide a valid path to your dataset.")
+        print("Please create a sample_dataset.csv with 'text' and 'label' columns.")

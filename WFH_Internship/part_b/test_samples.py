@@ -1,5 +1,6 @@
-from sentiment_analyzer import SentimentAnalyzer
+import re
 import pandas as pd
+from sentiment_analyzer import SentimentAnalyzer
 
 def create_sample_dataset():
     """Create a small sample dataset for testing."""
@@ -22,27 +23,46 @@ def test_sentiment_analyzer():
     
     # Create and save sample dataset
     df = create_sample_dataset()
-    df.to_csv('sample_dataset.csv', index=False)
+    sample_dataset_path = 'sample_dataset.csv'
+    df.to_csv(sample_dataset_path, index=False)
     
     # Test preprocessing
     text = "This is a GREAT product! 5/5 would recommend. http://example.com"
     processed = analyzer.preprocess_text(text)
-    assert 'http' not in processed.lower()
-    assert processed.islower()
+    
+    # Verify preprocessing
+    assert 'http' not in processed.lower(), "URLs not removed"
+    assert processed.islower(), "Text not converted to lowercase"
+    assert re.search(r'\w+', processed), "All text removed during preprocessing"
     
     # Test model training and evaluation
-    train_df, test_df = analyzer.load_and_prepare_data('sample_dataset.csv')
+    train_df, test_df = analyzer.load_and_prepare_data(sample_dataset_path)
+    
+    # Verify data preparation
+    assert len(train_df) > 0, "Training data is empty"
+    assert len(test_df) > 0, "Test data is empty"
+    
+    # Train the model
     analyzer.train(train_df)
+    
+    # Evaluate the model
     metrics, report = analyzer.evaluate(test_df)
+    
+    # Verify metrics
+    assert 'accuracy' in metrics, "Accuracy metric missing"
+    assert 'precision' in metrics, "Precision metric missing"
+    assert 'recall' in metrics, "Recall metric missing"
+    
+    # Verify metric values
+    for metric_name, metric_value in metrics.items():
+        assert 0 <= metric_value <= 1, f"{metric_name} out of valid range"
     
     # Test prediction
     sample_text = "This is an excellent product!"
     prediction = analyzer.predict(sample_text)
-    assert prediction in [0, 1]
+    assert prediction in [0, 1], f"Invalid prediction: {prediction}"
     
-    print("All test cases passed!")
-    print("\nModel Metrics:", metrics)
-    print("\nClassification Report:\n", report)
+    print("All sentiment analysis test cases passed successfully!")
 
 if __name__ == "__main__":
     test_sentiment_analyzer()
