@@ -19,7 +19,9 @@ EcoGuardian is an innovative AI character designed to promote environmental awar
 
 ## Installation
 
-1. Clone this repository
+1. ```
+   git clone git@github.com:XxAlonexX/Internship-Assessment.git
+   ```
 2. Install dependencies:
    ```
    pip install -r requirements.txt
